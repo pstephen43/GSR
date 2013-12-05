@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+
+my ($rc);  # return code
+my ($script_name, $directory_name); # names
+my ($type);
+
+
+## Initialize
+$script_name = "";
+$directory_name = "";
+
+&get_options(); ## get command line options
+
+## read directory contents
+opendir(DIRHANDLE, $directory_name);
+@files = readdir(DIRHANDLE);
+close(DIRHANDLE);
+  
+## remove "." and ".." from array
+shift(@files);
+shift(@files);
+  
+## process each file
+foreach $file (@files)
+{
+  $type = `file $file|sed "s/$file.//"`;
+
+  if($type =~ /text/ || $type =~ /script/)
+  {
+    print"processing ASCII file $file...\n";
+    system("sed -f $script_name $file > $file.replace");
+    system("mv $file.replace $file");
+  }
+  else
+  {
+    print"skipping BINARY file $file...\n";
+  }
+}
+
+exit(0);
+
+#=====================
+# Prints the help menu
+#=====================
+sub print_help_menu()
+{
+  print "Usage: $0 [-help] [-s <path to rules file> -d <directory>]\n";
+}
+
+#================================
+# Gets options that were supplied
+#================================
+sub get_options()
+{
+  ## read each option and set appropriate
+  ## variables.
+  if(scalar(@ARGV) != 0)
+  {
+    ## parse parameters
+    while($index < scalar(@ARGV))
+    {
+      if($ARGV[$index] eq "-s")
+      {
+        $script_name = $ARGV[++$index];
+        $index++;
+      }
+      elsif($ARGV[$index] eq "-d")
+      {
+        $directory_name = $ARGV[++$index];
+        $index++;
+      }
+      elsif($ARGV[$index] eq "-h" || $ARGV[$index] eq "-help")
+      {
+        &print_help_menu();
+        exit(0);
+      }
+      else
+      {
+        &print_help_menu();
+        exit(0);
+      }
+    }
+
+    ## ensure that all parms were supplied.
+    if($directory_name eq "" || $script_name eq "")
+    {
+      &print_help_menu();
+      exit(0);
+    }
+  }
+  else
+  {
+    &print_help_menu();
+    exit(0);
+  }
+}
